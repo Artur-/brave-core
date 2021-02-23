@@ -111,6 +111,9 @@ class State {
 
   bool GetAnonTransferChecked();
 
+  bool GetBAPReported();
+  void SetBAPReported(bool bap_reported);
+
  private:
   LedgerImpl* ledger_;  // NOT OWNED
   std::unique_ptr<StateMigration> migration_;
