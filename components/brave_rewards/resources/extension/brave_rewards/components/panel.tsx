@@ -586,37 +586,6 @@ export class Panel extends React.Component<Props, State> {
     chrome.braveRewards.disconnectWallet('uphold')
   }
 
-  shouldShowConnectedMessage = () => {
-    const { externalWallet, balance } = this.props.rewardsPanelData
-    const { wallets } = balance
-    const publisher: RewardsExtension.Publisher | undefined = this.getPublisher()
-    const notVerified = publisher && utils.isPublisherNotVerified(publisher.status)
-    const connected = publisher && utils.isPublisherConnected(publisher.status)
-    const status = utils.getWalletStatus(externalWallet)
-
-    if (notVerified) {
-      return true
-    }
-
-    if (connected && (status === 'unverified' ||
-      status === 'disconnected_unverified' ||
-      status === 'disconnected_verified')) {
-      return false
-    }
-
-    let nonUserFunds = 0
-
-    if (wallets['anonymous']) {
-      nonUserFunds += wallets['anonymous']
-    }
-
-    if (wallets['blinded']) {
-      nonUserFunds += wallets['blinded']
-    }
-
-    return connected && nonUserFunds === 0
-  }
-
   getActions = () => {
     let actions = []
 
@@ -817,7 +786,7 @@ export class Panel extends React.Component<Props, State> {
               onToggleTips={this.doNothing}
               donationAction={this.showTipSiteDetail.bind(this, 'one-time')}
               onIncludeInAuto={this.switchAutoContribute}
-              showUnVerified={this.shouldShowConnectedMessage()}
+              showUnVerified={true}
               acEnabled={enabledAC}
               moreLink={'https://brave.com/faq/#unclaimed-funds'}
               onRefreshPublisher={this.refreshPublisher}
