@@ -22,7 +22,6 @@
 #include "bat/ads/internal/database/tables/conversion_queue_database_table.h"
 #include "bat/ads/internal/database/tables/conversions_database_table.h"
 #include "bat/ads/internal/logging.h"
-#include "bat/ads/internal/security/conversions/conversions_util.h"
 #include "bat/ads/internal/time_formatting_util.h"
 #include "bat/ads/internal/url_util.h"
 #include "bat/ads/pref_names.h"
@@ -251,17 +250,7 @@ void Conversions::Convert(const AdEventInfo& ad_event,
               << " and advertiser id " << advertiser_id << " "
               << friendly_date_and_time);
 
-  security::VerifiableConversionEnvelopeInfo envelope;
-  if (verifiable_conversion.IsValid()) {
-    envelope = security::EncryptAndEncode(verifiable_conversion);
-    // TODO(Moritz Haller): Delete
-    BLOG(1, "DEBUG encrypted conversion_id:\n"
-                << "ciphertext: '" << envelope.ciphertext << "',\n"
-                << "epk: '" << envelope.ephemeral_public_key << "',\n"
-                << "nonce: '" << envelope.nonce << "'");
-  }
-
-  AddItemToQueue(ad_event, envelope);
+  AddItemToQueue(ad_event, verifiable_conversion);
 }
 
 ConversionList Conversions::FilterConversions(
@@ -299,8 +288,8 @@ ConversionList Conversions::SortConversions(const ConversionList& conversions) {
 }
 
 void Conversions::AddItemToQueue(
-    const AdEventInfo& ad_event,
-    const security::VerifiableConversionEnvelopeInfo& envelope) {
+      const AdEventInfo& ad_event,
+      const VerifiableConversionInfo& verifiable_conversion) {
   AdEventInfo conversion_ad_event = ad_event;
   conversion_ad_event.timestamp =
       static_cast<int64_t>(base::Time::Now().ToDoubleT());
@@ -320,6 +309,9 @@ void Conversions::AddItemToQueue(
   conversion_queue_item.creative_set_id = ad_event.creative_set_id;
   conversion_queue_item.creative_instance_id = ad_event.creative_instance_id;
   conversion_queue_item.advertiser_id = ad_event.advertiser_id;
+  conversion_queue_item.conversion_id = verifiable_conversion.id;
+  conversion_queue_item.advertiser_public_key =
+      verifiable_conversion.public_key;
   const int64_t rand_delay = brave_base::random::Geometric(
       g_is_debug ? kDebugConvertAfterSeconds : kConvertAfterSeconds);
   conversion_queue_item.timestamp =
@@ -331,11 +323,6 @@ void Conversions::AddItemToQueue(
       BLOG(0, "Failed to append conversion to queue");
       return;
     }
-
-    // if (envelope.IsValid()) {
-    //   // TODO(Moritz Haller): Add envelope to queue item
-    //   // queue_item.envelope = envelope;
-    // }
 
     BLOG(3, "Successfully appended conversion to queue");
 

@@ -130,7 +130,8 @@ void ConversionQueue::GetForCreativeInstanceId(
       "cq.conversion_id, "
       "cq.timestamp "
       "FROM %s AS cq "
-      "WHERE cq.creative_instance_id = '%s'",
+      "WHERE cq.creative_instance_id = '%s' "
+      "ORDER BY timestamp ASC",
       get_table_name().c_str(), creative_instance_id.c_str());
 
   DBCommandPtr command = DBCommand::New();
@@ -172,6 +173,11 @@ void ConversionQueue::Migrate(DBTransaction* transaction,
   switch (to_version) {
     case 10: {
       MigrateToV10(transaction);
+      break;
+    }
+
+    case 11: {
+      MigrateToV11(transaction);
       break;
     }
 
@@ -322,6 +328,21 @@ void ConversionQueue::MigrateToV10(DBTransaction* transaction) {
   util::Drop(transaction, get_table_name());
 
   CreateTableV10(transaction);
+}
+
+void ConversionQueue::MigrateToV11(DBTransaction* transaction) {
+  DCHECK(transaction);
+
+  const std::string query = base::StringPrintf(
+      "ALTER TABLE %s, "
+      "ADD COLUMN advertiser_public_key TEXT",
+      get_table_name().c_str());
+
+  DBCommandPtr command = DBCommand::New();
+  command->type = DBCommand::Type::EXECUTE;
+  command->command = query;
+
+  transaction->commands.push_back(std::move(command));
 }
 
 }  // namespace table

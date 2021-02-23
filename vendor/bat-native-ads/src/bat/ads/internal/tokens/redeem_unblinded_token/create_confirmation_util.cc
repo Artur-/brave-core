@@ -37,10 +37,7 @@ std::string CreateConfirmationRequestDTO(const ConfirmationInfo& confirmation,
   const std::string type = std::string(confirmation.type);
   dto.SetKey("type", base::Value(type));
 
-  // TODO(Moritz Haller): set each key in dict
-  // dto.SetPath("user_data", std::move(user_data));
-  dto.SetKey("user_data", base::Value(""));
-  // void MergeDictionary(const Value* dictionary);
+  dto.MergeDictionary(&user_data);
 
   std::string json;
   base::JSONWriter::Write(dto, &json);

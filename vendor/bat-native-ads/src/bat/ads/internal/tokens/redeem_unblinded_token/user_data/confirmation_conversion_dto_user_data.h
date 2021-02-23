@@ -6,8 +6,9 @@
 #ifndef BRAVE_VENDOR_BAT_NATIVE_ADS_SRC_BAT_ADS_INTERNAL_TOKENS_REDEEM_UNBLINDED_TOKEN_USER_DATA_CONFIRMATION_CONVERSION_DTO_USER_DATA_H_
 #define BRAVE_VENDOR_BAT_NATIVE_ADS_SRC_BAT_ADS_INTERNAL_TOKENS_REDEEM_UNBLINDED_TOKEN_USER_DATA_CONFIRMATION_CONVERSION_DTO_USER_DATA_H_
 
-#include "base/values.h"
 #include "bat/ads/internal/conversions/conversion_queue_item_info.h"
+
+#include "base/values.h"
 
 namespace ads {
 namespace dto {

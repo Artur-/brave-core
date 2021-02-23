@@ -8,6 +8,8 @@
 
 #include <string>
 
+#include "base/optional.h"
+
 namespace ads {
 
 struct VerifiableConversionInfo;
@@ -16,9 +18,10 @@ namespace security {
 
 struct VerifiableConversionEnvelopeInfo;
 
-VerifiableConversionEnvelopeInfo EncryptAndEncode(
+base::Optional<VerifiableConversionEnvelopeInfo> EncryptAndEncode(
     const VerifiableConversionInfo& verifiable_conversion);
 
+// TODO(Moritz Haller): base optional
 std::string DecodeAndDecrypt(
     const VerifiableConversionEnvelopeInfo verifiable_conversion_envelope,
     const std::string& advertiser_secret_key_base64);

@@ -28,10 +28,10 @@ TEST(BatAdsSecurityConversionsUtilsTest, EncryptAndEncodeShortMessage) {
   verifiable_conversion.public_key = advertiser_public_key;
 
   // Act
-  VerifiableConversionEnvelopeInfo verifiable_conversion_envelope =
+  const base::Optional<VerifiableConversionEnvelopeInfo> verifiable_conversion_envelope =
       EncryptAndEncode(verifiable_conversion);
   std::string result =
-      DecodeAndDecrypt(verifiable_conversion_envelope, advertiser_secret_key);
+      DecodeAndDecrypt(*verifiable_conversion_envelope, advertiser_secret_key);
 
   // Assert
   EXPECT_TRUE(result.empty());
@@ -50,10 +50,10 @@ TEST(BatAdsSecurityConversionsUtilsTest, EncryptAndEncodeLongMessage) {
   verifiable_conversion.public_key = advertiser_public_key;
 
   // Act
-  VerifiableConversionEnvelopeInfo verifiable_conversion_envelope =
+  const base::Optional<VerifiableConversionEnvelopeInfo> verifiable_conversion_envelope =
       EncryptAndEncode(verifiable_conversion);
   std::string result =
-      DecodeAndDecrypt(verifiable_conversion_envelope, advertiser_secret_key);
+      DecodeAndDecrypt(*verifiable_conversion_envelope, advertiser_secret_key);
 
   // Assert
   EXPECT_TRUE(result.empty());
@@ -72,10 +72,10 @@ TEST(BatAdsSecurityConversionsUtilsTest, EncryptAndEncodeInvalidMessage) {
   verifiable_conversion.public_key = advertiser_public_key;
 
   // Act
-  VerifiableConversionEnvelopeInfo verifiable_conversion_envelope =
+  const base::Optional<VerifiableConversionEnvelopeInfo> verifiable_conversion_envelope =
       EncryptAndEncode(verifiable_conversion);
   std::string result =
-      DecodeAndDecrypt(verifiable_conversion_envelope, advertiser_secret_key);
+      DecodeAndDecrypt(*verifiable_conversion_envelope, advertiser_secret_key);
 
   // Assert
   EXPECT_TRUE(result.empty());
@@ -94,10 +94,10 @@ TEST(BatAdsSecurityConversionsUtilsTest, EncryptAndEncodeWithInvalidPublicKey) {
   verifiable_conversion.public_key = advertiser_public_key;
 
   // Act
-  VerifiableConversionEnvelopeInfo verifiable_conversion_envelope =
+  const base::Optional<VerifiableConversionEnvelopeInfo> verifiable_conversion_envelope =
       EncryptAndEncode(verifiable_conversion);
   std::string result =
-      DecodeAndDecrypt(verifiable_conversion_envelope, advertiser_secret_key);
+      DecodeAndDecrypt(*verifiable_conversion_envelope, advertiser_secret_key);
 
   // Assert
   EXPECT_TRUE(result.empty());
@@ -116,10 +116,10 @@ TEST(BatAdsSecurityConversionsUtilsTest, EncryptAndEncode) {
   verifiable_conversion.public_key = advertiser_public_key;
 
   // Act
-  VerifiableConversionEnvelopeInfo verifiable_conversion_envelope =
+  const base::Optional<VerifiableConversionEnvelopeInfo> verifiable_conversion_envelope =
       EncryptAndEncode(verifiable_conversion);
   std::string result =
-      DecodeAndDecrypt(verifiable_conversion_envelope, advertiser_secret_key);
+      DecodeAndDecrypt(*verifiable_conversion_envelope, advertiser_secret_key);
 
   // Assert
   EXPECT_EQ(message, result);

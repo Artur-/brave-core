@@ -5,9 +5,12 @@
 
 #include "bat/ads/internal/security/conversions/conversions_util.h"
 
+#include <vector>
+
 #include "base/base64.h"
 #include "base/json/json_reader.h"
 #include "base/rand_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "bat/ads/internal/conversions/verifiable_conversion_info.h"
 #include "bat/ads/internal/logging.h"
 #include "bat/ads/internal/security/conversions/verifiable_conversion_envelope_info.h"
@@ -26,29 +29,33 @@ const size_t kVacCipherTextLength = 32;
 const size_t kVacMessageMaxLength = 30;
 const size_t kVacMessageMinLength = 15;
 
-std::vector<uint8_t> Base64ToUint8List(const std::string& value_base64) {
-  std::string value_string;
-  base::Base64Decode(value_base64, &value_string);
-  std::vector<uint8_t> value(value_string.begin(), value_string.end());
+std::vector<uint8_t> Base64ToBytes(const std::string& value_base64) {
+  std::string value_as_string;
+  base::Base64Decode(value_base64, &value_as_string);
 
-  return value;
+  const std::string hex_encoded =
+      base::HexEncode(value_as_string.data(), value_as_string.size());
+
+  std::vector<uint8_t> bytes;
+  base::HexStringToBytes(hex_encoded, &bytes);
+
+  return bytes;
 }
 
 }  // namespace
 
-VerifiableConversionEnvelopeInfo EncryptAndEncode(
+base::Optional<VerifiableConversionEnvelopeInfo> EncryptAndEncode(
     const VerifiableConversionInfo& verifiable_conversion) {
-  VerifiableConversionEnvelopeInfo envelope;
-  std::string message = verifiable_conversion.id;
-  std::string public_key_base64 = verifiable_conversion.public_key;
+  const std::string message = verifiable_conversion.id;
+  const std::string public_key_base64 = verifiable_conversion.public_key;
 
   if (message.length() < kVacMessageMinLength ||
       message.length() > kVacMessageMaxLength) {
-    return envelope;
+    return base::nullopt;
   }
 
   if (!IsLatinAlphaNumeric(message)) {
-    return envelope;
+    return base::nullopt;
   }
 
   // Protocol requires at least 2 trailing zero-padding bytes
@@ -56,25 +63,32 @@ VerifiableConversionEnvelopeInfo EncryptAndEncode(
   plaintext.insert(plaintext.end(), kVacCipherTextLength - plaintext.size(), 0);
   DCHECK_EQ(kVacCipherTextLength, plaintext.size());
 
-  std::vector<uint8_t> public_key = Base64ToUint8List(public_key_base64);
+  const std::vector<uint8_t> public_key = Base64ToBytes(public_key_base64);
   if (public_key.size() != kCryptoBoxPublicKeyBytes) {
-    return envelope;
+    return base::nullopt;
   }
 
-  KeyPairInfo ephemeral_key_pair = GenerateBoxKeyPair();
-  std::vector<uint8_t> nonce = GenerateNonce();
-  std::vector<uint8_t> padded_ciphertext =
+  const KeyPairInfo ephemeral_key_pair = GenerateBoxKeyPair();
+
+  const std::vector<uint8_t> nonce = GenerateNonce();
+
+  const std::vector<uint8_t> padded_ciphertext =
       Encrypt(plaintext, nonce, public_key, ephemeral_key_pair.secret_key);
 
   // The receiving TweetNaCl.js client does not require padding
-  std::vector<uint8_t> ciphertext(
+  const std::vector<uint8_t> ciphertext(
       padded_ciphertext.begin() + kCryptoBoxZeroBytes, padded_ciphertext.end());
 
+  VerifiableConversionEnvelopeInfo envelope;
   envelope.algorithm = kAlgorithm;
   envelope.ciphertext = base::Base64Encode(ciphertext);
   envelope.ephemeral_public_key =
       base::Base64Encode(ephemeral_key_pair.public_key);
   envelope.nonce = base::Base64Encode(nonce);
+
+  if (!envelope.IsValid()) {
+    return base::nullopt;
+  }
 
   return envelope;
 }
@@ -87,11 +101,11 @@ std::string DecodeAndDecrypt(const VerifiableConversionEnvelopeInfo envelope,
   }
 
   std::vector<uint8_t> advertiser_secret_key =
-      Base64ToUint8List(advertiser_secret_key_base64);
-  std::vector<uint8_t> nonce = Base64ToUint8List(envelope.nonce);
-  std::vector<uint8_t> ciphertext = Base64ToUint8List(envelope.ciphertext);
+      Base64ToBytes(advertiser_secret_key_base64);
+  std::vector<uint8_t> nonce = Base64ToBytes(envelope.nonce);
+  std::vector<uint8_t> ciphertext = Base64ToBytes(envelope.ciphertext);
   std::vector<uint8_t> ephemeral_public_key =
-      Base64ToUint8List(envelope.ephemeral_public_key);
+      Base64ToBytes(envelope.ephemeral_public_key);
 
   // API requires 16 leading zero-padding bytes
   ciphertext.insert(ciphertext.begin(), kCryptoBoxZeroBytes, 0);

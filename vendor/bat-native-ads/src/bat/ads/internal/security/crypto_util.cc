@@ -137,8 +137,6 @@ KeyPairInfo GenerateSignKeyPairFromSeed(const std::vector<uint8_t>& seed) {
 }
 
 KeyPairInfo GenerateBoxKeyPair() {
-  // TODO(Moritz Haller): Does initialisation matter, see init of |secret_key|
-  // |GenerateSignKeyPairFromSeed|
   std::vector<uint8_t> public_key(crypto_box_PUBLICKEYBYTES);
   std::vector<uint8_t> secret_key(crypto_box_SECRETKEYBYTES);
   crypto_box_keypair(&public_key.front(), &secret_key.front());

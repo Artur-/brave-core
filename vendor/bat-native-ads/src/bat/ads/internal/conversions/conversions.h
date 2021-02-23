@@ -55,7 +55,8 @@ class Conversions {
   ConversionList SortConversions(const ConversionList& conversions);
 
   void AddItemToQueue(const AdEventInfo& ad_event,
-      const security::VerifiableConversionEnvelopeInfo& envelope);
+      const VerifiableConversionInfo& verifiable_conversion);
+
   bool RemoveItemFromQueue(
       const ConversionQueueItemInfo& conversion_queue_item);
   void ProcessQueueItem(const ConversionQueueItemInfo& queue_item);

@@ -7,21 +7,51 @@
 
 #include <utility>
 
+#include "base/optional.h"
+#include "bat/ads/internal/conversions/verifiable_conversion_info.h"
+#include "bat/ads/internal/security/conversions/conversions_util.h"
+#include "bat/ads/internal/security/conversions/verifiable_conversion_envelope_info.h"
+
 namespace ads {
 namespace dto {
 namespace user_data {
 
+namespace {
+
+const char kAlgorithm[] = "crypto_box_curve25519xsalsa20poly1305";
+
+base::Optional<security::VerifiableConversionEnvelopeInfo> GetEnvelope(
+    const ConversionQueueItemInfo& conversion_queue_item) {
+  VerifiableConversionInfo verifiable_conversion;
+  verifiable_conversion.id = conversion_queue_item.conversion_id;
+  verifiable_conversion.public_key =
+      conversion_queue_item.advertiser_public_key;
+
+  if (!verifiable_conversion.IsValid()) {
+    return base::nullopt;
+  }
+
+  return security::EncryptAndEncode(verifiable_conversion);
+}
+
+}  // namespace
+
 base::DictionaryValue GetConversion(
-    const ConversionQueueItemList& conversion_queue_items) {
+    const ConversionQueueItemInfo& conversion_queue_item) {
   base::DictionaryValue user_data;
 
-  base::DictionaryValue dictionary;
-  dictionary.SetKey("alg", base::Value("alg"));
-  dictionary.SetKey("ciphertext", base::Value("ciphertext"));
-  dictionary.SetKey("epk", base::Value("epk"));
-  dictionary.SetKey("nonce", base::Value("nonce"));
+  const base::Optional<security::VerifiableConversionEnvelopeInfo> envelope =
+      GetEnvelope(conversion_queue_item);
+  if (envelope) {
+    base::DictionaryValue dictionary;
 
-  user_data.SetKey("conversionEnvelope", std::move(dictionary));
+    dictionary.SetKey("alg", base::Value(kAlgorithm));
+    dictionary.SetKey("ciphertext", base::Value(envelope->ciphertext));
+    dictionary.SetKey("epk", base::Value(envelope->ephemeral_public_key));
+    dictionary.SetKey("nonce", base::Value(envelope->nonce));
+
+    user_data.SetKey("conversionEnvelope", std::move(dictionary));
+  }
 
   return user_data;
 }
@@ -29,3 +59,7 @@ base::DictionaryValue GetConversion(
 }  // namespace user_data
 }  // namespace dto
 }  // namespace ads
+
+// TODO(Moritz Haller): review
+// check const correctnes
+// getters also

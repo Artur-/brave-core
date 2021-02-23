@@ -22,7 +22,7 @@ namespace database {
 namespace table {
 
 namespace {
-const char kTableName[] = "ad_conversions";
+const char kTableName[] = "creative_ad_conversions";
 }  // namespace
 
 Conversions::Conversions() = default;
@@ -110,6 +110,11 @@ void Conversions::Migrate(DBTransaction* transaction, const int to_version) {
   switch (to_version) {
     case 1: {
       MigrateToV1(transaction);
+      break;
+    }
+
+    case 11: {
+      MigrateToV11(transaction);
       break;
     }
 
@@ -215,8 +220,6 @@ void Conversions::CreateTableV1(DBTransaction* transaction) {
       "(creative_set_id TEXT NOT NULL, "
       "type TEXT NOT NULL, "
       "url_pattern TEXT NOT NULL, "
-      "advertiser_public_key TEXT NOT NULL, "  // TODO(Moritz Haller): upgrade
-                                               // path/migration?
       "observation_window INTEGER NOT NULL, "
       "expiry_timestamp TIMESTAMP NOT NULL, "
       "UNIQUE(creative_set_id, type, url_pattern) ON CONFLICT REPLACE, "
@@ -243,6 +246,22 @@ void Conversions::MigrateToV1(DBTransaction* transaction) {
 
   CreateTableV1(transaction);
   CreateIndexV1(transaction);
+}
+
+void Conversions::MigrateToV11(DBTransaction* transaction) {
+  DCHECK(transaction);
+
+  const std::string query = base::StringPrintf(
+      "ALTER TABLE %s, "
+      "ADD COLUMN advertiser_public_key TEXT",
+      get_table_name().c_str());
+
+  DBCommandPtr command = DBCommand::New();
+  command->type = DBCommand::Type::EXECUTE;
+  command->command = query;
+  transaction->commands.push_back(std::move(command));
+
+  util::Rename(transaction, "ad_conversions", get_table_name());
 }
 
 }  // namespace table
